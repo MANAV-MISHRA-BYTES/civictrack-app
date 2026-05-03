@@ -35,3 +35,27 @@ Election information is often buried in dense, confusing PDFs. CivicTrack solves
    ```bash
    git clone <repository-url>
    cd civictrack-app
+   ```
+
+2. **Set up your virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows use: .\venv\Scripts\activate
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Add your API Key:**
+   Create a `.env` file in the root directory and add your Google Gemini key:
+   ```env
+   GOOGLE_API_KEY=your_actual_api_key_here
+   ```
+
+5. **Run the application:**
+   ```bash
+   python app.py
+   ```
+   Navigate to `http://localhost:8080` to view the app!
