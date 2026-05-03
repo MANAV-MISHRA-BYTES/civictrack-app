@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicTrack | Interactive Election Guide</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: white;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 15px;
+            top: 30px;
+            bottom: 0;
+            width: 2px;
+            background: #3b82f6;
+            z-index: -1;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-4 md:p-8">
+
+    <div id="app" class="max-w-3xl mx-auto space-y-8">
+        {% raw %}
+        <!-- Header -->
+        <header class="text-center py-6">
+            <h1
+                class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                CivicTrack</h1>
+            <p class="text-slate-400 mt-2">Your personalized journey to the ballot box.</p>
+        </header>
+
+        <!-- Interactive Timeline Tracker -->
+        <section class="glass rounded-2xl p-6 shadow-xl">
+            <h2 class="text-xl font-bold mb-4 flex items-center">📍 The Voter Tracker</h2>
+            <p class="text-sm text-slate-400 mb-4">Tell us your situation, and we'll map out your exact election
+                timeline.</p>
+
+            <div class="flex gap-2 mb-6">
+                <input v-model="scenario" type="text" placeholder="e.g., I just turned 18 and moved to a new city..."
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                <button @click="fetchTimeline" :disabled="loadingTimeline"
+                    class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50">
+                    {{ loadingTimeline ? 'Mapping...' : 'Track' }}
+                </button>
+            </div>
+
+            <!-- Timeline Display -->
+            <div v-if="timeline.length" class="relative pl-2 mt-8 space-y-6">
+                <div class="timeline-line" v-if="timeline.length > 1"></div>
+                <div v-for="(step, index) in timeline" :key="index" class="relative pl-10">
+                    <div
+                        class="absolute left-0 top-1 w-8 h-8 rounded-full bg-blue-600 border-4 border-slate-900 flex items-center justify-center font-bold text-sm">
+                        {{ step.step }}</div>
+                    <h3 class="text-lg font-bold text-emerald-400">{{ step.title }}</h3>
+                    <p class="text-slate-300 text-sm mt-1">{{ step.description }}</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Democracy Sandbox -->
+        <section class="glass rounded-2xl p-6 shadow-xl mb-12">
+            <h2 class="text-xl font-bold mb-4 flex items-center">💡 Democracy Sandbox</h2>
+            <p class="text-sm text-slate-400 mb-4">Confused by election jargon? Ask any edge-case question.</p>
+
+            <div class="flex gap-2 mb-4">
+                <input v-model="question" type="text" placeholder="e.g., What is a VVPAT machine?"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500">
+                <button @click="fetchAnswer" :disabled="loadingAnswer"
+                    class="bg-emerald-600 hover:bg-emerald-700 px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50">
+                    {{ loadingAnswer ? 'Thinking...' : 'Ask' }}
+                </button>
+            </div>
+
+            <div v-if="answer" class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                <p class="text-slate-200 whitespace-pre-line">{{ answer }}</p>
+            </div>
+        </section>
+        {% endraw %}
+    </div>
+
+    <script>
+        const { createApp, ref } = Vue;
+
+        createApp({
+            setup() {
+                const scenario = ref('');
+                const timeline = ref([]);
+                const loadingTimeline = ref(false);
+
+                const question = ref('');
+                const answer = ref('');
+                const loadingAnswer = ref(false);
+
+                const fetchTimeline = async () => {
+                    if (!scenario.value) return;
+                    loadingTimeline.value = true;
+                    timeline.value = [];
+                    try {
+                        const res = await fetch('/api/timeline', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ scenario: scenario.value })
+                        });
+                        timeline.value = await res.json();
+                    } catch (e) { alert("Timeline generation failed."); }
+                    loadingTimeline.value = false;
+                };
+
+                const fetchAnswer = async () => {
+                    if (!question.value) return;
+                    loadingAnswer.value = true;
+                    answer.value = '';
+                    try {
+                        const res = await fetch('/api/sandbox', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ question: question.value })
+                        });
+                        const data = await res.json();
+                        answer.value = data.answer;
+                    } catch (e) { alert("Answer generation failed."); }
+                    loadingAnswer.value = false;
+                };
+
+                return { scenario, timeline, loadingTimeline, fetchTimeline, question, answer, loadingAnswer, fetchAnswer };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
